@@ -1,0 +1,45 @@
+=== Host ===
+WSL2-host
+Linux WSL2-host 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:30:46 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
+PRETTY_NAME="Ubuntu 22.04.5 LTS"
+NAME="Ubuntu"
+VERSION_ID="22.04"
+VERSION="22.04.5 LTS (Jammy Jellyfish)"
+VERSION_CODENAME=jammy
+ID=ubuntu
+ID_LIKE=debian
+HOME_URL="https://www.ubuntu.com/"
+SUPPORT_URL="https://help.ubuntu.com/"
+BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
+PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
+UBUNTU_CODENAME=jammy
+=== CPU / memory / disk ===
+12
+               total        used        free      shared  buff/cache   available
+Mem:           7.7Gi       3.0Gi       2.1Gi       3.0Mi       2.5Gi       4.5Gi
+Swap:          2.0Gi          0B       2.0Gi
+Filesystem      Size  Used Avail Use% Mounted on
+/dev/sdd       1007G   36G  921G   4% /
+=== tool versions ===
+QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)
+Copyright (c) 2003-2021 Fabrice Bellard and the QEMU Project developers
+qemu-img version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)
+gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
+GNU Make 4.3
+=== EDU model ===
+name "edu", bus PCI
+=== KVM ===
+uid=1000(local-user) gid=1000(local-user) groups=1000(local-user),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev),109(kvm),117(netdev)
+crw-rw---- 1 root kvm 10, 232 Oct  6 20:02 /dev/kvm
+=== SSH / network / helpers ===
+/usr/bin/ssh
+/usr/bin/scp
+/usr/bin/curl
+/usr/bin/wget
+/usr/bin/python3
+/usr/bin/nc
+system cloud-localds: not-installed
+project cloud-localds: Usage: cloud-localds [ options ] output user-data [meta-data]
+guest SSH port: 2222
+=== image checksum ===
+012d81fade7e8ff4428fc35dfeee711d66d1f47d5ea9c5c8ced96a85b959835c  ~/projects/edupci/.vm/base/jammy-server-cloudimg-amd64.img

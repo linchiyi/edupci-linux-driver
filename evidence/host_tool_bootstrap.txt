@@ -1,0 +1,7 @@
+./scripts/vm_setup.sh
+Fetching cloud-image-utils and genisoimage into project-local tools.
+Get:1 http://archive.ubuntu.com/ubuntu jammy/main amd64 cloud-image-utils all 0.32-22-g45fe84a5-0ubuntu1 [19.3 kB]
+Get:2 http://archive.ubuntu.com/ubuntu jammy/main amd64 genisoimage amd64 9:1.1.11-3.2ubuntu1 [370 kB]
+Fetched 389 kB in 2s (231 kB/s)
+VM files ready. SSH: edupci@127.0.0.1:2222
+Base image SHA-256: 012d81fade7e8ff4428fc35dfeee711d66d1f47d5ea9c5c8ced96a85b959835c

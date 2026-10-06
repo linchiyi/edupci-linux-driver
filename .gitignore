@@ -1,0 +1,16 @@
+.vm/
+*.o
+*.ko
+*.mod
+*.mod.c
+*.order
+*.symvers
+.*.cmd
+Module.symvers
+modules.order
+user/edu_cli
+user/edu_bench
+evidence/*.log
+evidence/*.tmp
+__pycache__/
+
