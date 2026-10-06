@@ -1,0 +1,23 @@
+[    4.269403] systemd[1]: Hostname set to <edupci-guest>.
+[   16.573115] edupci: loading out-of-tree module taints kernel.
+[   16.573184] edupci: module verification failed: signature and/or required key missing - tainting kernel
+[   16.576178] edupci 0000:00:01.0: QEMU EDU ready: BAR0=0x00000000fea00000 size=0x0000000000100000 IRQ=MSI (34) DMA=0x000000000534e000
+[   18.328238] edupci 0000:00:01.0: removing EduPCI device
+[   18.365139] edupci 0000:00:01.0: QEMU EDU ready: BAR0=0x00000000fea00000 size=0x0000000000100000 IRQ=MSI (34) DMA=0x0000000004be2000
+[   18.369132] edupci 0000:00:01.0: removing EduPCI device
+[   18.400855] edupci 0000:00:01.0: QEMU EDU ready: BAR0=0x00000000fea00000 size=0x0000000000100000 IRQ=MSI (34) DMA=0x0000000005d66000
+[   18.404428] edupci 0000:00:01.0: removing EduPCI device
+[   18.443062] edupci 0000:00:01.0: QEMU EDU ready: BAR0=0x00000000fea00000 size=0x0000000000100000 IRQ=MSI (34) DMA=0x0000000003515000
+[   18.447799] edupci 0000:00:01.0: removing EduPCI device
+[   25.087983] edupci 0000:00:01.0: QEMU EDU ready: BAR0=0x00000000fea00000 size=0x0000000000100000 IRQ=MSI (34) DMA=0x0000000004bd5000
+[   30.145459] edupci 0000:00:01.0: removing EduPCI device
+[  277.958878] edupci 0000:00:01.0: QEMU EDU ready: BAR0=0x00000000fea00000 size=0x0000000000100000 IRQ=MSI (34) DMA=0x0000000005b18000
+[  279.677678] edupci 0000:00:01.0: removing EduPCI device
+[  279.707309] edupci 0000:00:01.0: QEMU EDU ready: BAR0=0x00000000fea00000 size=0x0000000000100000 IRQ=MSI (34) DMA=0x0000000002d70000
+[  279.711778] edupci 0000:00:01.0: removing EduPCI device
+[  279.747468] edupci 0000:00:01.0: QEMU EDU ready: BAR0=0x00000000fea00000 size=0x0000000000100000 IRQ=MSI (34) DMA=0x0000000004bf0000
+[  279.752603] edupci 0000:00:01.0: removing EduPCI device
+[  279.794913] edupci 0000:00:01.0: QEMU EDU ready: BAR0=0x00000000fea00000 size=0x0000000000100000 IRQ=MSI (34) DMA=0x0000000000140000
+[  279.801172] edupci 0000:00:01.0: removing EduPCI device
+[  309.092975] edupci 0000:00:01.0: QEMU EDU ready: BAR0=0x00000000fea00000 size=0x0000000000100000 IRQ=MSI (34) DMA=0x0000000003b47000
+[  313.948879] edupci 0000:00:01.0: removing EduPCI device

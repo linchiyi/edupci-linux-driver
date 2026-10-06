@@ -1,0 +1,7 @@
+
+=== test_mmio.sh ===
+invert(0x00000000) = 0xffffffff: PASS
+invert(0xffffffff) = 0x00000000: PASS
+invert(0x12345678) = 0xedcba987: PASS
+invert(0xa5a5a5a5) = 0x5a5a5a5a: PASS
+MMIO patterns: PASS

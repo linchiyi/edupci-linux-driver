@@ -1,0 +1,8 @@
+
+=== test_events.sh ===
+blocking read wakeup: PASS
+empty/nonblocking read: PASS
+one event + poll readiness: PASS
+FIFO order: PASS
+ring wraparound: PASS
+full condition/overflow accounting: PASS (5 dropped)

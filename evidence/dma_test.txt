@@ -1,0 +1,8 @@
+
+=== test_dma.sh ===
+4096-byte boundary safety: PASS (rejected before DMA)
+DMA H2D/D2H 1 bytes: PASS
+DMA H2D/D2H 257 bytes: PASS
+DMA H2D/D2H 4095 bytes: PASS
+DMA H2D: PASS
+DMA D2H: PASS

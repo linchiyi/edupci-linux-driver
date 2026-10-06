@@ -1,0 +1,3 @@
+
+=== test_device.sh ===
+PCI discovery, driver binding, and character node: PASS

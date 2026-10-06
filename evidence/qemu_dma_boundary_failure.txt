@@ -1,0 +1,1 @@
+qemu: hardware error: EDU: DMA range 0x0000000000040000-0x0000000000040fff out of bounds (0x0000000000040000-0x0000000000040fff)!

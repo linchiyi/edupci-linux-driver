@@ -1,0 +1,5 @@
+
+=== test_reload.sh ===
+reload cycle 1: PASS
+reload cycle 2: PASS
+reload cycle 3: PASS
