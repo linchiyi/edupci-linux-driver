@@ -9,6 +9,7 @@ Final cold-start verification completed on 2026-10-06. QEMU ran an Ubuntu 22.04.
 | VM boot and guest provisioning | PASS | PASS | `evidence/guest_environment.txt` | VERIFIED |
 | EDU PCI discovery (`1234:11e8`) | PASS | PASS | `evidence/lspci_before_driver.txt`, `evidence/device_state.txt` | VERIFIED |
 | PCI probe, MSI setup, and remove | PASS | PASS | `evidence/module_load.txt`, `evidence/module_unload.txt` | VERIFIED |
+| INTx fallback path | PASS | NOT RUN | Driver fallback implementation; guest used MSI | UNVERIFIED |
 | BAR0 MMIO inversion | PASS | PASS | `evidence/mmio_test.txt` | VERIFIED |
 | Character device, ioctl, read, and poll | PASS | PASS | `evidence/device_test.txt`, `evidence/ring_test.txt`, `evidence/full_test.txt` | VERIFIED |
 | Factorial interrupt completion and range checks | PASS | PASS | `evidence/factorial_irq_test.txt` | VERIFIED |
