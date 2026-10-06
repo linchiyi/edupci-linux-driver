@@ -1,0 +1,22 @@
+make: Entering directory '/home/edupci/edupci/driver'
+make -C /lib/modules/5.15.0-198-generic/build M=/home/edupci/edupci/driver clean
+make[1]: Entering directory '/usr/src/linux-headers-5.15.0-198-generic'
+  CLEAN   /home/edupci/edupci/driver/Module.symvers
+make[1]: Leaving directory '/usr/src/linux-headers-5.15.0-198-generic'
+make: Leaving directory '/home/edupci/edupci/driver'
+make: Entering directory '/home/edupci/edupci/user'
+rm -f edu_cli
+cc -I../include -O2 -g -std=c11 -Wall -Wextra -Wpedantic -o edu_cli edu_cli.c
+make: Leaving directory '/home/edupci/edupci/user'
+make: Entering directory '/home/edupci/edupci/driver'
+make -C /lib/modules/5.15.0-198-generic/build M=/home/edupci/edupci/driver modules
+make[1]: Entering directory '/usr/src/linux-headers-5.15.0-198-generic'
+  CC [M]  /home/edupci/edupci/driver/edu_main.o
+  LD [M]  /home/edupci/edupci/driver/edupci.o
+  MODPOST /home/edupci/edupci/driver/Module.symvers
+  CC [M]  /home/edupci/edupci/driver/edupci.mod.o
+  LD [M]  /home/edupci/edupci/driver/edupci.ko
+  BTF [M] /home/edupci/edupci/driver/edupci.ko
+Skipping BTF generation for /home/edupci/edupci/driver/edupci.ko due to unavailability of vmlinux
+make[1]: Leaving directory '/usr/src/linux-headers-5.15.0-198-generic'
+make: Leaving directory '/home/edupci/edupci/driver'
