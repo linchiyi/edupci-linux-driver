@@ -105,7 +105,7 @@ The end-to-end suite starts the guest if needed, syncs sources, performs a clean
 - user/edu_cli.c — CLI and actual-content checks
 - scripts/ — VM lifecycle, provisioning, source sync, build and evidence
 - tests/ — guest integration tests
-- docs/ — architecture, register map, learning and interview guides
+- docs/ — architecture, register map, learning and interview guides, verified resume bullets
 - evidence/ — captured environment and runtime output
 
 ## Implementation highlights
