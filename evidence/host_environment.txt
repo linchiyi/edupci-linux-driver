@@ -1,87 +1,19 @@
-=== Host ===
-WSL2-host
-Linux WSL2-host 6.6.87.2-microsoft-standard-WSL2 #1 SMP PREEMPT_DYNAMIC Thu Jun  5 18:30:46 UTC 2025 x86_64 x86_64 x86_64 GNU/Linux
-PRETTY_NAME="Ubuntu 22.04.5 LTS"
-NAME="Ubuntu"
-VERSION_ID="22.04"
-VERSION="22.04.5 LTS (Jammy Jellyfish)"
-VERSION_CODENAME=jammy
-ID=ubuntu
-ID_LIKE=debian
-HOME_URL="https://www.ubuntu.com/"
-SUPPORT_URL="https://help.ubuntu.com/"
-BUG_REPORT_URL="https://bugs.launchpad.net/ubuntu/"
-PRIVACY_POLICY_URL="https://www.ubuntu.com/legal/terms-and-policies/privacy-policy"
-UBUNTU_CODENAME=jammy
-=== CPU / memory / disk ===
-12
-               total        used        free      shared  buff/cache   available
-Mem:           7.7Gi       3.0Gi       2.1Gi       3.0Mi       2.5Gi       4.5Gi
-Swap:          2.0Gi          0B       2.0Gi
-Filesystem      Size  Used Avail Use% Mounted on
-/dev/sdd       1007G   36G  921G   4% /
-=== tool versions ===
-QEMU emulator version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)
-Copyright (c) 2003-2021 Fabrice Bellard and the QEMU Project developers
-qemu-img version 6.2.0 (Debian 1:6.2+dfsg-2ubuntu6.31)
-gcc (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
-GNU Make 4.3
-=== EDU model ===
-name "edu", bus PCI
-=== KVM ===
-uid=1000(local-user) gid=1000(local-user) groups=1000(local-user),4(adm),20(dialout),24(cdrom),25(floppy),27(sudo),29(audio),30(dip),44(video),46(plugdev),109(kvm),117(netdev)
-crw-rw---- 1 root kvm 10, 232 Oct  6 20:02 /dev/kvm
-=== SSH / network / helpers ===
-/usr/bin/ssh
-/usr/bin/scp
-/usr/bin/curl
-/usr/bin/wget
-/usr/bin/python3
-/usr/bin/nc
-system cloud-localds: not-installed
-project cloud-localds: Usage: cloud-localds [ options ] output user-data [meta-data]
-guest SSH port: 2222
-=== image checksum ===
-012d81fade7e8ff4428fc35dfeee711d66d1f47d5ea9c5c8ced96a85b959835c  ~/projects/edupci/.vm/base/jammy-server-cloudimg-amd64.img
-=== lscpu ===
-Architecture:                         x86_64
-CPU op-mode(s):                       32-bit, 64-bit
-Address sizes:                        39 bits physical, 48 bits virtual
-Byte Order:                           Little Endian
-CPU(s):                               12
-On-line CPU(s) list:                  0-11
-Vendor ID:                            GenuineIntel
-Model name:                           Intel(R) Core(TM) i5-10400 CPU @ 2.90GHz
-CPU family:                           6
-Model:                                165
-Thread(s) per core:                   2
-Core(s) per socket:                   6
-Socket(s):                            1
-Stepping:                             3
-BogoMIPS:                             5807.99
-Flags:                                fpu vme de pse tsc msr pae mce cx8 apic sep mtrr pge mca cmov pat pse36 clflush mmx fxsr sse sse2 ss ht syscall nx pdpe1gb rdtscp lm constant_tsc arch_perfmon rep_good nopl xtopology cpuid tsc_known_freq pni pclmulqdq vmx ssse3 fma cx16 pdcm pcid sse4_1 sse4_2 x2apic movbe popcnt xsave avx f16c rdrand hypervisor lahf_lm abm 3dnowprefetch ssbd ibrs ibpb stibp ibrs_enhanced tpr_shadow ept vpid ept_ad fsgsbase bmi1 avx2 smep bmi2 erms invpcid rdseed adx smap clflushopt xsaveopt xsavec xgetbv1 xsaves vnmi md_clear flush_l1d arch_capabilities
-Virtualization:                       VT-x
-Hypervisor vendor:                    Microsoft
-Virtualization type:                  full
-L1d cache:                            192 KiB (6 instances)
-L1i cache:                            192 KiB (6 instances)
-L2 cache:                             1.5 MiB (6 instances)
-L3 cache:                             12 MiB (1 instance)
-NUMA node(s):                         1
-NUMA node0 CPU(s):                    0-11
-Vulnerability Gather data sampling:   Unknown: Dependent on hypervisor status
-Vulnerability Itlb multihit:          KVM: Mitigation: Split huge pages
-Vulnerability L1tf:                   Not affected
-Vulnerability Mds:                    Not affected
-Vulnerability Meltdown:               Not affected
-Vulnerability Mmio stale data:        Vulnerable: Clear CPU buffers attempted, no microcode; SMT Host state unknown
-Vulnerability Reg file data sampling: Not affected
-Vulnerability Retbleed:               Mitigation; Enhanced IBRS
-Vulnerability Spec rstack overflow:   Not affected
-Vulnerability Spec store bypass:      Mitigation; Speculative Store Bypass disabled via prctl
-Vulnerability Spectre v1:             Mitigation; usercopy/swapgs barriers and __user pointer sanitization
-Vulnerability Spectre v2:             Mitigation; Enhanced / Automatic IBRS; IBPB conditional; RSB filling; PBRSB-eIBRS SW sequence; BHI SW loop, KVM SW loop
-Vulnerability Srbds:                  Unknown: Dependent on hypervisor status
-Vulnerability Tsx async abort:        Not affected
-=== g++ ===
-g++ (Ubuntu 11.4.0-1ubuntu1~22.04.3) 11.4.0
+Host environment summary (local identity and machine inventory omitted)
+
+OS: Ubuntu 22.04.5 LTS under WSL2
+Architecture: x86_64
+Kernel: 6.6.87.2-microsoft-standard-WSL2
+QEMU / qemu-img: 6.2.0 (Ubuntu Jammy package build)
+QEMU EDU model: available as -device edu
+KVM: available to the local QEMU process
+GCC: 11.4.0
+GNU Make: 4.3
+Python: 3.x
+SSH/SCP, curl, wget, nc, qemu-img: available
+
+The host did not have cloud-localds or genisoimage installed system-wide.
+The VM setup script fetched the Ubuntu packages and unpacked the helpers under
+the ignored .vm/host-tools directory; the host package set was not changed.
+
+Ubuntu Jammy cloud image SHA-256:
+012d81fade7e8ff4428fc35dfeee711d66d1f47d5ea9c5c8ced96a85b959835c

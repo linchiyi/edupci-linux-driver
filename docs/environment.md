@@ -6,12 +6,9 @@ Recorded from the WSL2 host before guest setup on 2026-10-06 (Asia/Taipei):
 
 | Item | Observed |
 |---|---|
-| Hostname | WSL2 host (local identifier omitted) |
-| OS | Ubuntu 22.04.5 LTS |
+| Host OS | Ubuntu 22.04.5 LTS under WSL2 |
 | Architecture | `x86_64` |
-| CPU | Intel Core i5-10400, 6 cores / 12 logical CPUs |
 | Kernel | `6.6.87.2-microsoft-standard-WSL2` |
-| Memory / free disk at audit | 7.7 GiB visible to WSL / 921 GiB free |
 | QEMU | 6.2.0 (`Debian 1:6.2+dfsg-2ubuntu6.31`) |
 | QEMU EDU model | Available as `-device edu` |
 | KVM | `/dev/kvm` present; user is in `kvm` group |
@@ -39,4 +36,4 @@ Recorded in `evidence/guest_environment.txt` after a successful first boot and p
 | Kernel build headers | `/lib/modules/5.15.0-198-generic/build` exists |
 | Guest resources | 2 vCPU and 2 GiB RAM, configured by QEMU |
 
-The exact host command output is in `evidence/host_environment.txt`; the pre-driver PCI listing is in `evidence/lspci_before_driver.txt`.
+The summarized host details are in `evidence/host_environment.txt`; the pre-driver PCI listing is in `evidence/lspci_before_driver.txt`.

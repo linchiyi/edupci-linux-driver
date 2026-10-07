@@ -1,0 +1,40 @@
+[1/6] Guest / PCI device
+00:01.0 Unclassified device [00ff]: Device [1234:11e8] (rev 10)
+
+[2/6] Driver probe
+edupci                 20480  0
+device node: /dev/edupci
+PASS
+
+[3/6] MMIO inversion
+invert(0x00000000) = 0xffffffff: PASS
+invert(0xffffffff) = 0x00000000: PASS
+invert(0x12345678) = 0xedcba987: PASS
+invert(0xa5a5a5a5) = 0x5a5a5a5a: PASS
+PASS
+
+[4/6] Interrupt factorial
+factorial(5) = 120, IRQ completion: PASS
+IRQ completion: PASS
+
+[5/6] Ring/event path
+blocking read wakeup: PASS
+kernel factorial range rejection: PASS
+undersized read and unknown ioctl errors: PASS
+empty/nonblocking read: PASS
+one event + poll readiness + EFAULT retention: PASS
+FIFO order: PASS
+ring wraparound: PASS
+full condition/overflow accounting: PASS (5 dropped)
+
+[6/6] DMA
+zero-length and invalid-direction DMA rejection: PASS
+4096-byte boundary safety: PASS (rejected before DMA)
+DMA interrupted-wait cleanup: PASS
+DMA H2D/D2H 1 bytes: PASS
+DMA H2D/D2H 257 bytes: PASS
+DMA H2D/D2H 4095 bytes: PASS
+DMA H2D: PASS
+DMA D2H: PASS
+
+EduPCI demo: PASS
