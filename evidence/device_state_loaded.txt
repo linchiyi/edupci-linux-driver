@@ -1,0 +1,13 @@
+=== lspci -nnk ===
+00:01.0 Unclassified device [00ff]: Device [1234:11e8] (rev 10)
+	Subsystem: Red Hat, Inc. Device [1af4:1100]
+	Kernel driver in use: edupci
+
+=== module ===
+edupci                 20480  0
+
+=== node ===
+crw------- root:root /dev/edupci
+
+=== EDU IRQ ===
+ 34:        135          0   PCI-MSI 16384-edge      edupci

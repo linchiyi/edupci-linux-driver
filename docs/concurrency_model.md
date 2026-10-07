@@ -4,8 +4,9 @@
 |---|---|---|---|
 | EDU factorial/DMA registers | ioctl path programs and reads registers | handler reads IRQ status and completion value | operation_lock serializes process requests; the handler never takes this mutex. Register roles and operation sequencing are documented in qemu_edu_registers.md. |
 | active_operation | ioctl sets and clears the active request | handler reads it before matching a cause | WRITE_ONCE / READ_ONCE. It is a small discriminator; operation_lock ensures only one process operation is active. |
+| engine_faulted | operation path sets if an EDU engine does not become idle after timeout | not read by handler | operation_lock; failed hardware is not reused for a later request. |
 | factorial_done / dma_done | waiting ioctl reinitializes and waits | matching handler calls complete() | Linux completion primitive supplies its own synchronization. Reinitialize before issuing the device command. |
-| ring, head, tail, count, last_sequence, event_overflows | read() removes entries; stats ioctl reads counters | handler appends entries | ring_lock, acquired with spin_lock_irqsave() in both contexts. Copy to userspace occurs after releasing it. |
+| ring, head, tail, count, last_sequence, event_overflows | read() snapshots/commits entries; stats ioctl reads counters | handler appends entries | ring_lock, acquired with spin_lock_irqsave() in both contexts. Copy to userspace occurs after releasing it; tail/count commit only follows a successful copy. |
 | read_wait | read()/poll() wait for records | event producer wakes readers | wait-queue API; ring_lock remains the authority on whether data exists. |
 | coherent DMA buffer | ioctl copies user data and starts transfer | handler only records completion; EDU accesses DMA memory | operation_lock serializes userspace access. dma_wmb() before device reads host data; dma_rmb() after device writes host data. Do not inspect a transfer before completion. |
 | irq_count, factorial_count, dma_count | stats ioctl reads | handler increments | atomic64_t; these are independent counters, not compound state. |
@@ -44,3 +45,10 @@ userspace task       driver/process context      EDU device       hard IRQ
 
 remove first marks the instance dead and deregisters the misc device. It wakes blocked reads and completes operation waits so that open callers can exit. It then takes operation_lock before touching or releasing BAR/DMA resources. free_irq() synchronizes with a handler already in progress before BAR0 is unmapped.
 
+Plain `rmmod` is prevented while an open file exists because the file operations
+set `.owner = THIS_MODULE`. PCI sysfs unbind is separate and has not been
+runtime-tested while read or hardware work is active. If a DMA engine does not
+clear RUN within the remove timeout, the driver disables bus mastering and
+INTx and intentionally retains its coherent allocation; this avoids freeing
+memory that a still-active EDU engine may address, at the cost of a rare
+allocation leak. The QEMU runtime suite covers only idle reloads.

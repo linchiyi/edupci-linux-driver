@@ -42,10 +42,10 @@
 - **push 輸入：** event type、value；**輸出：**插入時遞增 sequence，滿載時遞增 overflow 並丟棄新事件。
 - **push locals：** flags 用於 spin_lock_irqsave；queued 決定解鎖後是否 wake up。
 - **read 輸入：** userspace buffer 和 bytes count；**輸出：**讀取的 event bytes，空且已移除時回 EOF。
-- **read 流程：** 檢查 count 是 event 大小的倍數；read_lock 序列化 consumer；空時對 nonblocking fd 回 -EAGAIN，否則最多等待 30 秒的 wait_event_interruptible_timeout；spin_lock_irqsave 內將至多 32 筆搬到 kernel stack、更新 tail/count；解鎖後 copy_to_user。ring-test 會 fork 一個 blocking reader，等另一個 request 產生事件後確認它醒來並讀到 event。
+- **read 流程：** 檢查 count 是 event 大小的倍數；read_lock 序列化 consumer；空時對 nonblocking fd 回 -EAGAIN，否則最多等待 30 秒的 wait_event_interruptible_timeout；spin_lock_irqsave 內將至多 32 筆複製到 kernel stack；解鎖後 copy_to_user；只有整批複製成功才重新取 ring_lock 並提交 tail/count 更新。ring-test 會 fork 一個 blocking reader，等另一個 request 產生事件後確認它醒來並讀到 event，也驗證 EFAULT 不會消耗事件。
 - **context：** push 在 IRQ；read 在 process context。
 - **同步：** ring_lock 保護資料與索引。read_lock 只序列化多個 userspace reader；copy_to_user 不在 spinlock 內。
-- **限制：** 若 copy_to_user 發生 fault，已從 ring 移出的該批事件不會放回。正常 CLI 傳入有效 buffer。
+- **錯誤處理：** 若 copy_to_user 發生 fault，read 回 -EFAULT，ring 索引不變，呼叫者可用有效 buffer 重試。
 
 ## edu_do_dma()
 
@@ -58,12 +58,12 @@
 ## edu_remove() 與資源釋放
 
 - **輸入：** PCI core 傳入移除中的 pci_dev；**輸出：**無。
-- **逐步：**標 dead、從 misc singleton 移除並 deregister；wake read waiters、complete 進行中的等待；拿 operation_lock 等目前 ioctl 離開；停用 factorial IRQ、ack pending cause；free_irq 等待 handler 退出；free MSI vector、清 bus master、free coherent buffer、iounmap、release regions、disable PCI function；清 PCI drvdata，釋放 binding kref。
+- **逐步：**標 dead、從 misc singleton 移除並 deregister；wake read waiters、complete 進行中的等待；拿 operation_lock 等目前 ioctl 離開；等待 DMA idle、停用 factorial IRQ、ack pending cause；若 DMA 仍 active，先 clear bus master、遮蔽 INTx 並保留 coherent buffer；否則 cleanup 先 clear bus master，再 free_irq 等待 handler 退出、free MSI vector、free coherent buffer、iounmap、release regions、disable PCI function；清 PCI drvdata，釋放 binding kref。
 - **同步：** open file 另持有 kref，因此 file 記憶體仍有效；dead 後 file operation 不再碰 PCI resource。free_irq 前 BAR 仍映射。
-- **錯誤情況：** EDU 規格沒有 DMA cancel register。正常 remove 等 DMA RUN 清除且有 3 秒 timeout，並留下 kernel warning 供 evidence 檢查。
+- **錯誤情況：** EDU 規格沒有 DMA cancel register。remove 等 DMA RUN 清除；若三秒後仍 active，會先停 bus mastering、遮蔽 INTx，保留 coherent DMA allocation 以避免 DMA-after-free，並留下 kernel warning。此罕見故障恢復分支尚未在 QEMU runtime 注入測試。
 
 ## CLI 與 ABI
 
 - include/edu_ioctl.h 使用 __u32 / __aligned_u64；pointer 欄位固定 64-bit，32-bit compat ioctl 也使用固定結構。
-- info 讀裝置 ID、版本、BAR size 和 IRQ mode；invert 比對獨立算出的 bitwise complement；factorial 檢查結果及 IRQ counter；ring-test 驗證空、poll、單筆、FIFO、跨索引繞回、滿載 drop-new 與 overflow；dma-test 驗證 1、257、4095 bytes 的雙向內容，並確認 4096 bytes 在啟動硬體前被拒絕。
+- info 讀裝置 ID、版本、BAR size 和 IRQ mode；invert 比對獨立算出的 bitwise complement；factorial 檢查結果及 IRQ counter；ring-test 驗證 kernel factorial 範圍錯誤、空讀取、poll、EFAULT 保留、FIFO、跨索引繞回、滿載 drop-new 與 overflow；dma-test 驗證 1、257、4095 bytes 的雙向內容，並確認零長度、錯誤方向和 4096 bytes 在啟動硬體前被拒絕。
 - 每個 ioctl 都是明確的 kernel/user copy；userspace 不可直接映射或 dereference BAR0。

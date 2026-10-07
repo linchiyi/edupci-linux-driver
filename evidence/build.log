@@ -9,7 +9,7 @@ rm -f edu_cli
 cc -I../include -O2 -g -std=c11 -Wall -Wextra -Wpedantic -o edu_cli edu_cli.c
 make: Leaving directory '/home/edupci/edupci/user'
 make: Entering directory '/home/edupci/edupci/driver'
-make -C /lib/modules/5.15.0-198-generic/build M=/home/edupci/edupci/driver modules
+make -C /lib/modules/5.15.0-198-generic/build M=/home/edupci/edupci/driver W=1 modules
 make[1]: Entering directory '/usr/src/linux-headers-5.15.0-198-generic'
   CC [M]  /home/edupci/edupci/driver/edu_main.o
   LD [M]  /home/edupci/edupci/driver/edupci.o

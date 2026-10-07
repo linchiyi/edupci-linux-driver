@@ -6,7 +6,7 @@ Recorded from the WSL2 host before guest setup on 2026-10-06 (Asia/Taipei):
 
 | Item | Observed |
 |---|---|
-| Hostname | `WSL2-host` |
+| Hostname | WSL2 host (local identifier omitted) |
 | OS | Ubuntu 22.04.5 LTS |
 | Architecture | `x86_64` |
 | CPU | Intel Core i5-10400, 6 cores / 12 logical CPUs |

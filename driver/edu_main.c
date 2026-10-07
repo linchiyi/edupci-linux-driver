@@ -64,6 +64,7 @@ struct edu_device {
 	bool device_enabled;
 	bool bus_master_enabled;
 	bool dead;
+	bool engine_faulted;
 	int active_operation;
 
 	struct mutex operation_lock;
@@ -211,6 +212,8 @@ static long edu_do_factorial(struct edu_device *dev,
 			     struct edu_factorial *request)
 {
 	long waited;
+	long drain_waited;
+	bool check_idle = false;
 	int ret;
 
 	if (request->input > 12)
@@ -221,10 +224,16 @@ static long edu_do_factorial(struct edu_device *dev,
 		ret = -ENODEV;
 		goto out_unlock;
 	}
+	if (dev->engine_faulted) {
+		ret = -EIO;
+		goto out_unlock;
+	}
 
 	ret = edu_wait_factorial_idle(dev, EDU_OPERATION_TIMEOUT_MS);
-	if (ret)
+	if (ret) {
+		dev->engine_faulted = true;
 		goto out_unlock;
+	}
 
 	/* Drop a stale cause before arming this request's completion. */
 	writel(0, dev->bar0 + EDU_REG_STATUS);
@@ -247,13 +256,32 @@ static long edu_do_factorial(struct edu_device *dev,
 		ret = 0;
 	}
 
-	WRITE_ONCE(dev->active_operation, EDU_ACTIVE_NONE);
-	writel(0, dev->bar0 + EDU_REG_STATUS);
-	edu_ack_pending_irqs(dev);
-	if (waited <= 0 && edu_wait_factorial_idle(dev,
-						  EDU_OPERATION_TIMEOUT_MS))
+	/*
+	 * Keep the operation active while draining a completion after a signal or
+	 * timeout. Otherwise a late IRQ could be mistaken for the next request.
+	 */
+	if (waited <= 0 || READ_ONCE(dev->dead)) {
+		if (waited <= 0 && !READ_ONCE(dev->dead)) {
+			drain_waited = wait_for_completion_timeout(
+				&dev->factorial_done,
+				msecs_to_jiffies(EDU_OPERATION_TIMEOUT_MS));
+			check_idle = !drain_waited;
+		} else {
+			check_idle = true;
+		}
+	}
+	if (READ_ONCE(dev->dead))
+		check_idle = true;
+	if (check_idle && edu_wait_factorial_idle(dev,
+						 EDU_OPERATION_TIMEOUT_MS)) {
+		dev->engine_faulted = true;
 		dev_err(&dev->pdev->dev,
-			"factorial engine did not become idle after interrupted wait\n");
+			"factorial engine did not become idle; rejecting later operations\n");
+	}
+	writel(0, dev->bar0 + EDU_REG_STATUS);
+	synchronize_irq(dev->irq);
+	edu_ack_pending_irqs(dev);
+	WRITE_ONCE(dev->active_operation, EDU_ACTIVE_NONE);
 out_unlock:
 	mutex_unlock(&dev->operation_lock);
 	return ret;
@@ -280,9 +308,15 @@ static long edu_do_dma(struct edu_device *dev, struct edu_dma_request *request)
 		ret = -ENODEV;
 		goto out_unlock;
 	}
-	ret = edu_wait_dma_idle(dev, EDU_OPERATION_TIMEOUT_MS);
-	if (ret)
+	if (dev->engine_faulted) {
+		ret = -EIO;
 		goto out_unlock;
+	}
+	ret = edu_wait_dma_idle(dev, EDU_OPERATION_TIMEOUT_MS);
+	if (ret) {
+		dev->engine_faulted = true;
+		goto out_unlock;
+	}
 
 	if (request->direction == EDU_DMA_HOST_TO_DEVICE &&
 	    copy_from_user(dev->dma_cpu, user_buffer, request->length)) {
@@ -323,10 +357,19 @@ static long edu_do_dma(struct edu_device *dev, struct edu_dma_request *request)
 	else
 		ret = 0;
 
-	WRITE_ONCE(dev->active_operation, EDU_ACTIVE_NONE);
+	if (ret) {
+		if (waited <= 0 && !READ_ONCE(dev->dead))
+			wait_for_completion_timeout(&dev->dma_done,
+				msecs_to_jiffies(EDU_OPERATION_TIMEOUT_MS));
+		if (edu_wait_dma_idle(dev, EDU_OPERATION_TIMEOUT_MS)) {
+			dev->engine_faulted = true;
+			dev_err(&dev->pdev->dev,
+				"DMA engine did not become idle; rejecting later operations\n");
+		}
+	}
+	synchronize_irq(dev->irq);
 	edu_ack_pending_irqs(dev);
-	if (ret && edu_wait_dma_idle(dev, EDU_OPERATION_TIMEOUT_MS))
-		dev_err(&dev->pdev->dev, "DMA engine did not become idle after error\n");
+	WRITE_ONCE(dev->active_operation, EDU_ACTIVE_NONE);
 
 	if (!ret && request->direction == EDU_DMA_DEVICE_TO_HOST) {
 		dma_rmb();
@@ -372,6 +415,7 @@ static ssize_t edu_read(struct file *file, char __user *buffer,
 	struct edu_event events[EDU_READ_BATCH];
 	size_t max_events;
 	u32 copied;
+	u32 i;
 	unsigned long flags;
 	ssize_t ret;
 	long waited;
@@ -413,20 +457,23 @@ static ssize_t edu_read(struct file *file, char __user *buffer,
 		}
 
 		spin_lock_irqsave(&dev->ring_lock, flags);
-		copied = 0;
-		while (copied < max_events && dev->ring_count) {
-			events[copied++] = dev->ring[dev->ring_tail];
-			dev->ring_tail = (dev->ring_tail + 1) %
-					 EDU_EVENT_CAPACITY;
-			dev->ring_count--;
-		}
+		copied = min_t(u32, max_events, dev->ring_count);
+		for (i = 0; i < copied; i++)
+			events[i] = dev->ring[(dev->ring_tail + i) %
+					      EDU_EVENT_CAPACITY];
 		spin_unlock_irqrestore(&dev->ring_lock, flags);
 
 		if (copy_to_user(buffer, events,
-				 copied * sizeof(struct edu_event)))
+				 copied * sizeof(struct edu_event))) {
 			ret = -EFAULT;
-		else
-			ret = copied * sizeof(struct edu_event);
+			goto out_unlock;
+		}
+
+		spin_lock_irqsave(&dev->ring_lock, flags);
+		dev->ring_tail = (dev->ring_tail + copied) % EDU_EVENT_CAPACITY;
+		dev->ring_count -= copied;
+		spin_unlock_irqrestore(&dev->ring_lock, flags);
+		ret = copied * sizeof(struct edu_event);
 		goto out_unlock;
 	}
 
@@ -584,6 +631,10 @@ static int edu_setup_irq(struct edu_device *dev)
 
 static void edu_free_resources(struct edu_device *dev)
 {
+	if (dev->bus_master_enabled) {
+		pci_clear_master(dev->pdev);
+		dev->bus_master_enabled = false;
+	}
 	if (dev->irq_requested) {
 		free_irq(dev->irq, dev);
 		dev->irq_requested = false;
@@ -591,10 +642,6 @@ static void edu_free_resources(struct edu_device *dev)
 	if (dev->irq_vectors_allocated) {
 		pci_free_irq_vectors(dev->pdev);
 		dev->irq_vectors_allocated = false;
-	}
-	if (dev->bus_master_enabled) {
-		pci_clear_master(dev->pdev);
-		dev->bus_master_enabled = false;
 	}
 	if (dev->dma_cpu) {
 		dma_free_coherent(&dev->pdev->dev, EDU_DMA_BUFFER_SIZE,
@@ -754,12 +801,23 @@ static void edu_remove(struct pci_dev *pdev)
 	/* EDU has no DMA cancel register; wait for its bounded transfer engine. */
 	mutex_lock(&dev->operation_lock);
 	if (dev->dma_cpu &&
-	    edu_wait_dma_idle(dev, EDU_OPERATION_TIMEOUT_MS))
+	    edu_wait_dma_idle(dev, EDU_OPERATION_TIMEOUT_MS)) {
 		dev_warn(&pdev->dev, "DMA still active during remove\n");
+		dev->engine_faulted = true;
+		if (dev->bus_master_enabled) {
+			pci_clear_master(pdev);
+			dev->bus_master_enabled = false;
+		}
+		pci_intx(pdev, 0);
+		dev_warn(&pdev->dev,
+			 "retaining coherent DMA buffer because EDU may still use it\n");
+		dev->dma_cpu = NULL;
+	}
 	writel(0, dev->bar0 + EDU_REG_STATUS);
 	causes = readl(dev->bar0 + EDU_REG_IRQ_STATUS);
 	if (causes)
 		writel(causes, dev->bar0 + EDU_REG_IRQ_ACK);
+	synchronize_irq(dev->irq);
 	mutex_unlock(&dev->operation_lock);
 
 	dev_info(&pdev->dev, "removing EduPCI device\n");

@@ -35,7 +35,7 @@
 | 29. CPU virtual address | process/kernel 程式看到的虛擬位址，由 MMU 翻譯。 | CLI user buffer、kernel coherent buffer 各有 CPU 可用位址。 | edu_dma_request.user_buffer、dma_cpu | 為什麼 CPU pointer 不等於 DMA address？ |
 | 30. Physical address | 系統記憶體的實體位址；CPU virtual address 需經 page table 翻譯。 | driver 不直接推測 coherent allocation 的 physical address。 | edu_do_dma | 一個 pointer 如何轉成 physical address？ |
 | 31. DMA address | 裝置 DMA domain 使用的位址，可能由 IOMMU 轉譯，不應由 CPU pointer cast。 | dma_alloc_coherent 回傳 dma_address。 | edu_probe、edu_do_dma | DMA API 回傳的兩個位址各給誰用？ |
-| 32. Coherent DMA | CPU/device 對同一配置保持一致可見的 DMA memory；仍需 ordering barrier。 | 4096-byte H2D/D2H transfer buffer。 | dma_alloc_coherent、dma_wmb、dma_rmb | coherent 是否代表完全不需 barrier？ |
+| 32. Coherent DMA | CPU/device 對同一配置保持一致可見的 DMA memory；仍需 ordering barrier。 | 配置 4096-byte coherent buffer；本專案逐 byte 驗證的傳輸長度為 1、257、4095 bytes。 | dma_alloc_coherent、dma_wmb、dma_rmb | coherent 是否代表完全不需 barrier？ |
 | 33. Cache coherence | 多個觀察者看到記憶體更新的可見性問題；DMA API 隔離平台差異。 | coherent buffer 配合 dma_wmb/rmb 控制資料與命令順序。 | edu_do_dma | non-coherent 平台會有什麼額外工作？ |
 | 34. Cleanup / error unwinding | 每個成功取得的資源都要在後續失敗或 remove 時釋放，避免 leak/use-after-free。 | PCI enable、regions、BAR、IRQ、DMA、misc node 按生命週期配對。 | edu_probe、edu_free_resources、edu_remove | probe 第五步失敗時前四步如何回收？ |
 

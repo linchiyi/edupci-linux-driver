@@ -118,7 +118,7 @@ The ring uses a 64-record capacity. IRQ is the producer and read() is the consum
 
 ## DMA
 
-The driver sets a 28-bit DMA mask and uses dma_alloc_coherent() for the host buffer. It keeps the CPU virtual pointer separate from the DMA address, requests an IRQ on completion, and verifies actual bytes in both directions. EDU's internal buffer is 4096 bytes; this project caps transfers at 4095 because QEMU 6.2 rejects the exact-end range due to an off-by-one check documented in docs/qemu_edu_registers.md.
+The driver sets a 28-bit DMA mask and uses dma_alloc_coherent() for the host buffer. It keeps the CPU virtual pointer separate from the DMA address, requests an IRQ on completion, and verifies actual bytes in both directions. EDU's internal buffer is 4096 bytes; this project caps transfers at 4095 because the tested QEMU 6.2.0 implementation rejects the exact-end range due to an off-by-one check documented in docs/qemu_edu_registers.md.
 
 ## Debugging lessons
 

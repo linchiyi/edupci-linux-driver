@@ -38,11 +38,10 @@ The hard IRQ handler is the ring producer. It assigns a monotonic sequence numbe
 
 ### DMA
 
-edu_do_dma() copies host-to-device input into a dma_alloc_coherent() buffer, executes dma_wmb(), programs the EDU DMA source/destination/count/command registers, then sleeps on dma_done. The IRQ handler acknowledges cause 0x100 and completes the wait. For device-to-host, the driver executes dma_rmb() and copies the coherent buffer to the caller. The CLI compares bytes for 1, 257, and 4096-byte transfers in both directions.
+edu_do_dma() copies host-to-device input into a dma_alloc_coherent() buffer, executes dma_wmb(), programs the EDU DMA source/destination/count/command registers, then sleeps on dma_done. The IRQ handler acknowledges cause 0x100 and completes the wait. For device-to-host, the driver executes dma_rmb() and copies the coherent buffer to the caller. The CLI compares bytes for 1, 257, and 4095-byte transfers in both directions; a 4096-byte request is rejected before MMIO because of the exact-end range-check failure in the tested QEMU 6.2 implementation.
 
 ## Resource lifetime
 
-edu_probe() enables the PCI function, requests its BAR regions, maps BAR0, checks identification, sets a 28-bit DMA mask, allocates the coherent buffer, enables bus mastering, allocates MSI (with INTx fallback), requests the IRQ, and registers /dev/edupci. Every failure jumps through reverse-order cleanup.
+edu_probe() enables the PCI function, requests its BAR regions, maps BAR0, checks identification, sets a 28-bit DMA mask, allocates the coherent buffer, enables bus mastering, allocates MSI (with INTx fallback), requests the IRQ, and registers /dev/edupci. Every failure uses flag-checked cleanup; teardown clears bus mastering before releasing IRQ and DMA resources.
 
-edu_remove() marks the instance dead, deregisters the misc device, wakes blocked readers and operation completions, waits for the serialized operation path to leave, disables device IRQ generation, acknowledges pending causes, frees the IRQ, clears bus mastering, frees DMA memory, unmaps BAR0, releases regions, and disables the PCI function. Open files hold a kref; after removal they see ENODEV or EOF rather than dereferencing released PCI resources.
-
+edu_remove() marks the instance dead, deregisters the misc device, wakes blocked readers and operation completions, waits for the serialized operation path to leave, disables factorial IRQ generation, acknowledges pending causes, clears bus mastering, frees the IRQ/vector, frees or quarantines DMA memory, unmaps BAR0, releases regions, and disables the PCI function. Open files hold a kref; after removal they see ENODEV or EOF rather than dereferencing released PCI resources.

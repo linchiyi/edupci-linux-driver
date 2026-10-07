@@ -12,6 +12,11 @@ SEED_IMAGE="$SEED_DIR/seed.iso"
 IMAGE_URL="https://cloud-images.ubuntu.com/jammy/current/jammy-server-cloudimg-amd64.img"
 LOCAL_HOST_TOOLS="$VM_DIR/host-tools/usr/bin"
 
+# Reuse already unpacked project-local helpers on subsequent VM starts.
+if [[ -d "$LOCAL_HOST_TOOLS" ]]; then
+  export PATH="$LOCAL_HOST_TOOLS:$PATH"
+fi
+
 # Keep host package changes optional. If either cloud-init ISO helper is missing,
 # download the Ubuntu packages and unpack them under ignored .vm/host-tools.
 ensure_cloud_image_tools() {
@@ -28,7 +33,6 @@ ensure_cloud_image_tools() {
 
   local download_dir="$VM_DIR/host-package-cache"
   mkdir -p "$download_dir" "$VM_DIR/host-tools"
-  rm -f "$download_dir"/*.deb
   echo 'Fetching cloud-image-utils and genisoimage into project-local tools.'
   (cd "$download_dir" && apt-get download cloud-image-utils genisoimage)
 

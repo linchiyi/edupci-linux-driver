@@ -12,6 +12,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <sys/ioctl.h>
+#include <sys/time.h>
 #include <unistd.h>
 
 #include "../include/edu_ioctl.h"
@@ -46,9 +47,11 @@ static int parse_u32(const char *text, uint32_t *value)
 	char *end = NULL;
 	unsigned long parsed;
 
+	if (!text[0] || text[0] == '-')
+		return -1;
 	errno = 0;
 	parsed = strtoul(text, &end, 0);
-	if (errno || !text[0] || !end || *end || parsed > UINT32_MAX)
+	if (errno || !end || end == text || *end || parsed > UINT32_MAX)
 		return -1;
 	*value = (uint32_t)parsed;
 	return 0;
@@ -409,6 +412,31 @@ static int command_ring_test(void)
 		goto fail;
 	}
 	{
+		struct edu_factorial invalid = { .input = 13 };
+
+		errno = 0;
+		if (ioctl(fd, EDU_IOC_FACTORIAL, &invalid) >= 0 || errno != ERANGE) {
+			fprintf(stderr, "kernel factorial range check failed\n");
+			goto fail;
+		}
+		puts("kernel factorial range rejection: PASS");
+	}
+	{
+		struct edu_event event;
+		got = read(fd, &event, sizeof(event) - 1);
+		if (got >= 0 || errno != EINVAL) {
+			fprintf(stderr, "undersized event read did not return EINVAL\n");
+			goto fail;
+		}
+		errno = 0;
+		if (ioctl(fd, _IO(EDU_IOCTL_MAGIC, 0x7f), NULL) >= 0 ||
+		    errno != ENOTTY) {
+			fprintf(stderr, "unknown ioctl did not return ENOTTY\n");
+			goto fail;
+		}
+		puts("undersized read and unknown ioctl errors: PASS");
+	}
+	{
 		struct edu_event event;
 		got = read(fd, &event, sizeof(event));
 		if (got >= 0 || errno != EAGAIN) {
@@ -423,6 +451,11 @@ static int command_ring_test(void)
 		if (factorial_fd(fd, 5, &result) || result != 120)
 			goto fail;
 	}
+	errno = 0;
+	if (read(fd, NULL, sizeof(events[0])) >= 0 || errno != EFAULT) {
+		fprintf(stderr, "invalid event buffer did not return EFAULT\n");
+		goto fail;
+	}
 	if (event_readable(fd, 0) != 1 ||
 	    read_events_exact(fd, events, 1)) {
 		fprintf(stderr, "single-event readiness/read failed\n");
@@ -432,7 +465,7 @@ static int command_ring_test(void)
 		fprintf(stderr, "unexpected single event contents\n");
 		goto fail;
 	}
-	printf("one event + poll readiness: PASS\n");
+	printf("one event + poll readiness + EFAULT retention: PASS\n");
 
 	if (issue_factorials(fd, basic_inputs,
 			     sizeof(basic_inputs) / sizeof(basic_inputs[0])))
@@ -546,6 +579,86 @@ static int run_dma(int fd, uint32_t direction, void *buffer, uint32_t length)
 	return 0;
 }
 
+static volatile sig_atomic_t dma_test_alarm_fired;
+
+static void dma_test_alarm_handler(int signal_number)
+{
+	(void)signal_number;
+	dma_test_alarm_fired = 1;
+}
+
+static int dma_interrupted_cleanup_test(int fd, unsigned char *source,
+					unsigned char *destination,
+					uint32_t length)
+{
+	struct sigaction action = { 0 };
+	struct sigaction previous_action;
+	struct itimerval timer = { 0 };
+	struct edu_stats before;
+	struct edu_stats after;
+	struct edu_dma_request request = {
+		.direction = EDU_DMA_HOST_TO_DEVICE,
+		.length = length,
+		.user_buffer = (uint64_t)(uintptr_t)source,
+	};
+	int ioctl_result;
+	int ioctl_error;
+	int ret = -1;
+	uint32_t i;
+
+	/* Seed EDU memory with different data so a skipped H2D cannot pass. */
+	for (i = 0; i < length; i++)
+		destination[i] = (unsigned char)~source[i];
+	if (run_dma(fd, EDU_DMA_HOST_TO_DEVICE, destination, length) ||
+	    get_stats(fd, &before))
+		return -1;
+
+	action.sa_handler = dma_test_alarm_handler;
+	sigemptyset(&action.sa_mask);
+	if (sigaction(SIGALRM, &action, &previous_action) < 0) {
+		fprintf(stderr, "sigaction: %s\n", strerror(errno));
+		return -1;
+	}
+
+	dma_test_alarm_fired = 0;
+	timer.it_value.tv_usec = 10000;
+	if (setitimer(ITIMER_REAL, &timer, NULL) < 0) {
+		fprintf(stderr, "setitimer: %s\n", strerror(errno));
+		goto out_restore;
+	}
+	ioctl_result = ioctl(fd, EDU_IOC_DMA, &request);
+	ioctl_error = errno;
+	timer.it_value.tv_sec = 0;
+	timer.it_value.tv_usec = 0;
+	if (setitimer(ITIMER_REAL, &timer, NULL) < 0) {
+		fprintf(stderr, "disable setitimer: %s\n", strerror(errno));
+		goto out_restore;
+	}
+	if (ioctl_result != -1 || ioctl_error != EINTR ||
+	    !dma_test_alarm_fired) {
+		fprintf(stderr,
+			"DMA ioctl was not interrupted during its completion wait\n");
+		goto out_restore;
+	}
+
+	memset(destination, 0, length);
+	if (run_dma(fd, EDU_DMA_DEVICE_TO_HOST, destination, length) ||
+	    memcmp(source, destination, length) || get_stats(fd, &after) ||
+	    after.dma_count != before.dma_count + 2) {
+		fprintf(stderr, "DMA did not quiesce correctly after signal\n");
+		goto out_restore;
+	}
+	puts("DMA interrupted-wait cleanup: PASS");
+	ret = 0;
+
+out_restore:
+	timer.it_value.tv_sec = 0;
+	timer.it_value.tv_usec = 0;
+	setitimer(ITIMER_REAL, &timer, NULL);
+	sigaction(SIGALRM, &previous_action, NULL);
+	return ret;
+}
+
 static int command_dma_test(void)
 {
 	static const uint32_t lengths[] = { 1, 257, EDU_DMA_MAX_LENGTH };
@@ -571,12 +684,30 @@ static int command_dma_test(void)
 	boundary_request.direction = EDU_DMA_HOST_TO_DEVICE;
 	boundary_request.length = EDU_DMA_BUFFER_SIZE;
 	boundary_request.user_buffer = (uint64_t)(uintptr_t)source;
+	boundary_request.length = 0;
+	if (ioctl(fd, EDU_IOC_DMA, &boundary_request) == 0 || errno != EINVAL) {
+		fprintf(stderr, "zero-length DMA was not rejected\n");
+		goto fail;
+	}
+	boundary_request.length = 1;
+	boundary_request.direction = 99;
+	if (ioctl(fd, EDU_IOC_DMA, &boundary_request) == 0 || errno != EINVAL) {
+		fprintf(stderr, "invalid DMA direction was not rejected\n");
+		goto fail;
+	}
+	puts("zero-length and invalid-direction DMA rejection: PASS");
+	boundary_request.direction = EDU_DMA_HOST_TO_DEVICE;
+	boundary_request.length = EDU_DMA_BUFFER_SIZE;
 	errno = 0;
 	if (ioctl(fd, EDU_IOC_DMA, &boundary_request) == 0 || errno != EINVAL) {
 		fprintf(stderr, "4096-byte EDU boundary was not rejected safely\n");
 		goto fail;
 	}
 	puts("4096-byte boundary safety: PASS (rejected before DMA)");
+	for (i = 0; i < 257; i++)
+		source[i] = (unsigned char)((i * 37U + 0xa5U) & 0xffU);
+	if (dma_interrupted_cleanup_test(fd, source, destination, 257))
+		goto fail;
 
 	for (size_index = 0;
 	     size_index < sizeof(lengths) / sizeof(lengths[0]);
